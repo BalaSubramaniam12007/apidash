@@ -514,6 +514,7 @@ const kLabelRequests = "Requests";
 const kLabelVariables = "Variables";
 const kLabelHistory = "History";
 const kLabelLogs = "Logs";
+const kLabelExplorer = "Explorer";
 const kLabelAbout = "About";
 const kLabelSettings = "Settings";
 

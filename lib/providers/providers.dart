@@ -1,6 +1,8 @@
 export 'ai_providers.dart';
+export 'api_detail_state_notifier.dart';
 export 'collection_providers.dart';
 export 'environment_providers.dart';
+export 'explorer_state_notifier.dart';
 export 'history_providers.dart';
 export 'terminal_providers.dart';
 export 'settings_providers.dart';
