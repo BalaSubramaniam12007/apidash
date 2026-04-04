@@ -40,12 +40,8 @@ class ApiExplorerService {
 
     final pointerUrl = '$_repoBase@main/api_templates/current.json';
     for (var attempt = 1; attempt <= _pointerMaxRetries; attempt++) {
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
       try {
-        final pointerData = await _getJsonMap(
-          '$pointerUrl?t=$timestamp',
-          noStore: true,
-        );
+        final pointerData = await _getJsonMap(pointerUrl, noStore: true);
         final sha = pointerData['sha']?.toString().trim();
         if (sha != null && sha.isNotEmpty) {
           _cachedSha = sha;
@@ -83,7 +79,7 @@ class ApiExplorerService {
 
   Future<Map<String, dynamic>> getApiTemplate(String sha, String apiId) async {
     final payload = await _getJsonValue(
-      '$_repoBase@$sha/api_templates/apis/$apiId/template.json',
+      '$_repoBase@$sha/api_templates/apis/$apiId/templates.json',
     );
     return _normalizeTemplatePayload(payload, apiId: apiId);
   }
@@ -93,34 +89,10 @@ class ApiExplorerService {
     required String apiId,
     required String version,
   }) async {
-    final templateUrls = <String>[
-      '$_repoBase@$sha/api_templates/apis/$apiId/template.json',
-      '$_repoBase@$sha/api_templates/apis/$apiId/$version/template.json',
+    final payload = await _getJsonValue(
       '$_repoBase@$sha/api_templates/apis/$apiId/$version/templates.json',
-    ];
-
-    Object? lastError;
-    for (final templateUrl in templateUrls) {
-      try {
-        final payload = await _getJsonValue(templateUrl);
-        return _normalizeTemplatePayload(payload, apiId: apiId);
-      } catch (error) {
-        lastError = error;
-        debugPrint(
-          '$_kApiExplorerServiceLogPrefix Failed template URL '
-          '$templateUrl: $error',
-        );
-      }
-    }
-
-    debugPrint(
-      '$_kApiExplorerServiceLogPrefix Unable to fetch templates for '
-      '$apiId:$version (${lastError ?? 'unknown error'}).',
     );
-    throw Exception(
-      'Unable to fetch templates for $apiId:$version '
-      '(${lastError ?? 'unknown error'})',
-    );
+    return _normalizeTemplatePayload(payload, apiId: apiId);
   }
 
   Future<Object?> _getJsonValue(String url, {bool noStore = false}) async {
