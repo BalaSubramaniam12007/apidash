@@ -24,6 +24,23 @@ class ApiExplorerService {
 
   String get _repoBase => 'https://cdn.jsdelivr.net/gh/$repository';
 
+  String get _pointerFallbackUrl =>
+      '$_repoBase@main/api_templates/current.json';
+
+  String get _pointerPrimaryUrl {
+    final segments = repository.split('/');
+    if (segments.length < 2) {
+      return _pointerFallbackUrl;
+    }
+    final owner = segments.first.trim();
+    final repo = segments.sublist(1).join('/').trim();
+    if (owner.isEmpty || repo.isEmpty) {
+      return _pointerFallbackUrl;
+    }
+    return 'https://raw.githubusercontent.com/'
+        '$owner/$repo/main/api_templates/current.json';
+  }
+
   String? _cachedSha;
   DateTime? _cachedShaAt;
 
@@ -38,25 +55,32 @@ class ApiExplorerService {
       return cachedSha;
     }
 
-    final pointerUrl = '$_repoBase@main/api_templates/current.json';
+    final pointerUrls = <String>[_pointerPrimaryUrl, _pointerFallbackUrl];
+
     for (var attempt = 1; attempt <= _pointerMaxRetries; attempt++) {
-      try {
-        final pointerData = await _getJsonMap(pointerUrl, noStore: true);
-        final sha = pointerData['sha']?.toString().trim();
-        if (sha != null && sha.isNotEmpty) {
-          _cachedSha = sha;
-          _cachedShaAt = now;
-          return sha;
+      for (final pointerUrl in pointerUrls) {
+        try {
+          final pointerData = await _getJsonMap(pointerUrl, noStore: true);
+          final sha = _extractSha(pointerData);
+          if (sha != null && sha.isNotEmpty) {
+            _cachedSha = sha;
+            _cachedShaAt = now;
+            return sha;
+          }
+        } catch (error) {
+          debugPrint(
+            '$_kApiExplorerServiceLogPrefix Failed to read pointer '
+            '$pointerUrl: $error',
+          );
         }
-      } catch (error) {
-        final isLastAttempt = attempt == _pointerMaxRetries;
+      }
+
+      final isLastAttempt = attempt == _pointerMaxRetries;
+      if (!isLastAttempt) {
         debugPrint(
-          '$_kApiExplorerServiceLogPrefix Failed to resolve SHA '
-          '(attempt $attempt/$_pointerMaxRetries): $error',
+          '$_kApiExplorerServiceLogPrefix Retrying SHA resolution '
+          '(attempt $attempt/$_pointerMaxRetries)',
         );
-        if (isLastAttempt) {
-          throw Exception('Unable to resolve latest API Explorer SHA: $error');
-        }
         await Future<void>.delayed(_pointerRetryDelay);
       }
     }
@@ -150,5 +174,23 @@ class ApiExplorerService {
       'apiId=$apiId type=${payload.runtimeType}',
     );
     throw Exception('Invalid template payload for apiId=$apiId');
+  }
+
+  String? _extractSha(Map<String, dynamic> pointerData) {
+    final candidates = <Object?>[
+      pointerData['sha'],
+      pointerData['commitSha'],
+      pointerData['commit'],
+      pointerData['currentSha'],
+      pointerData['ref'],
+    ];
+
+    for (final candidate in candidates) {
+      final value = candidate?.toString().trim();
+      if (value != null && value.isNotEmpty) {
+        return value;
+      }
+    }
+    return null;
   }
 }

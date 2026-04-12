@@ -47,11 +47,14 @@ class ExplorerPage extends ConsumerWidget {
           onPageChanged: (page) =>
               ref.read(apiExplorerStateProvider.notifier).onPageChanged(page),
         ),
-        const AppStatusBar(
+        AppStatusBar(
           networkLabel: 'NETWORK: CONNECTED',
           networkConnected: true,
-          latencyLabel: 'LATENCY: 24MS',
           systemStateLabel: 'SYSTEM STABLE',
+          onReload: () {
+            ref.invalidate(explorerShaProvider);
+            ref.invalidate(explorerGlobalIndexProvider);
+          },
         ),
       ],
     );

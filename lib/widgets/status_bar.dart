@@ -6,17 +6,17 @@ class AppStatusBar extends StatelessWidget {
     super.key,
     required this.networkLabel,
     required this.networkConnected,
-    required this.latencyLabel,
     required this.systemStateLabel,
+    this.onReload,
   });
 
   final String networkLabel;
 
   final bool networkConnected;
 
-  final String latencyLabel;
-
   final String systemStateLabel;
+
+  final VoidCallback? onReload;
 
   @override
   Widget build(BuildContext context) {
@@ -42,8 +42,6 @@ class AppStatusBar extends StatelessWidget {
           kHSpacer6,
           Text(networkLabel, style: theme.textTheme.labelSmall),
           const Spacer(),
-          Text(latencyLabel, style: theme.textTheme.labelSmall),
-          const Spacer(),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             decoration: BoxDecoration(
@@ -58,6 +56,22 @@ class AppStatusBar extends StatelessWidget {
               ),
             ),
           ),
+          if (onReload != null) ...<Widget>[
+            const SizedBox(width: 4),
+            IconButton(
+              tooltip: 'Reload APIs',
+              onPressed: onReload,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints.tightFor(width: 24, height: 24),
+              iconSize: 16,
+              visualDensity: VisualDensity.compact,
+              icon: Icon(
+                Icons.refresh_rounded,
+                size: 16,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          ],
         ],
       ),
     );
